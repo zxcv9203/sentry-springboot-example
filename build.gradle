@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.1.0'
     id 'io.spring.dependency-management' version '1.1.0'
+    id 'com.google.cloud.tools.jib' version '3.3.2'
 }
 
 group = 'com.example'
@@ -18,6 +19,13 @@ repositories {
     mavenCentral()
 }
 
+
+def env = new Properties()
+def envFile = project.file('.env')
+if (envFile.exists()) {
+    env.load(new FileInputStream(envFile))
+}
+
 dependencies {
     // sentry 의존성 추가
     implementation 'io.sentry:sentry-spring-jakarta:6.20.0'
@@ -32,4 +40,32 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+jib {
+    from {
+        image = 'amazoncorretto:17.0.4-al2'
+        platforms {
+            platform {
+                architecture = "arm64"
+                os = "linux"
+            }
+            platform {
+                architecture = "amd64"
+                os = "linux"
+            }
+        }
+        auth {
+            username = "zxcv9203"
+            password = env.getProperty("DOCKER_PASSWORD")
+        }
+    }
+    to {
+        image = 'zxcv9203/sentry-springboot-app'
+        tags = ["${project.version.toString().toLowerCase()}"]
+        auth {
+            username = "zxcv9203"
+            password = env.getProperty("DOCKER_PASSWORD")
+        }
+    }
 }
